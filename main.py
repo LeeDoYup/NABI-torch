@@ -8,8 +8,7 @@ import os
 
 
 from dataset import FeatureDataset 
-from train import train
-from test import test
+from train import train, evaluate
 
 
 def parse_args():    
@@ -17,9 +16,9 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=1111, help='random seed')
     
     #Training Specifications
-    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--epoch', type=int, default=30)
     parser.add_argument('--num_hid', type=int, default=1024)
-    parser.add_argument('--lr', type=float, default=0.01)
+    parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--batch_size', type=int, default=512)
     
     #Model type
@@ -49,8 +48,8 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = True
     
     #Construct dataset
-    Datasets = {}
-    Loaders = {}
+    datasets = {}
+    loaders = {}
     for key in ['train', 'eval', 'test']:
         if key == 'train':
             is_shuffle = True
@@ -59,21 +58,20 @@ if __name__ == '__main__':
         
         datasets[key] = FeatureDataset(key)
         loaders[key] = DataLoader(datasets[key], 
-                                  args.data_dir, 
-                                  batch_size, 
+                                  batch_size,
                                   shuffle=is_shuffle, 
                                   num_workers=4)
     
     #Construct Model (by argument)
     constructor = 'build_%s' % args.model
-    if args.ablation is None:
-        print("[*] Model Construction Start")
-        if args.model == None:
-            import model.None as model
-            print("[*]\t None model construction")
-            model = getattr(model, constructor)(train_dset, args.num_hid).cuda()
-        else:
-            raise NotImplementedError
+    print("[*] Model Construction Start")
+    if args.model == 'baseline':
+        import models.baseline as baseline
+        print("[*]\t None model construction")
+        #model = getattr(baseline.model, constructor)(train_dset, args.num_hid).cuda()
+        model = baseline.model()
+    else:
+        raise NotImplementedError
     
     #For GPU computation
     model = nn.DataParallel(model).cuda()
@@ -82,13 +80,13 @@ if __name__ == '__main__':
     '''
     # Train & Evaluate
     '''
-    train(model, loaders['train'], loaders['eval'], args.epochs, save_path, args)
+    train(model, loaders['train'], loaders['eval'], save_path, args)
     
     '''
     # Test Run
     '''
-    test_loss, test_preds = wevaluate(model, loaders['test'], reload=True, save_path=save_path)
+    test_loss, test_preds = evaluate(model, loaders['test'], reload=True, save_path=save_path)
     
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
-    np.save(os.path.join(args.output_dir, args.output_name)'.npy', test_preds)
+    np.save(os.path.join(args.output_dir, args.output_name)+'.npy', test_preds)

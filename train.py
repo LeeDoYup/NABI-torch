@@ -3,6 +3,7 @@ import time
 import torch
 import torch.nn as nn
 import utils
+import numpy as np
 from torch.autograd import Variable
 
 
@@ -14,23 +15,23 @@ def bce_with_logits(logits, gts):
 def train(model, train_loader, eval_loader, save_path, args):
     num_epoch = args.epoch
     utils.create_dir(save_path)
-    optim = torch.optim.Adamax(model.parameters())
+    optim = torch.optim.Adamax(model.parameters(), lr=args.lr)
     logger = utils.Logger(os.path.join(save_path, 'log.txt'))
     
-    best_eval_loss = 0
+    best_eval_loss = 1000000.00
     if os.path.exists(os.path.join(save_path, 'model.pth')):
         checkpoint = torch.load(os.path.join(save_path, 'model.pth'))
         model.load_state_dict(checkpoint)
         print('[*] Saved model is loaded:\t', save_path+'/model.pth')
     
-    for epoch in range(num_epochs):
+    for epoch in range(num_epoch):
         total_loss = 0
         t = time.time()
 
-        for (vital, demo, gt) in enumerate(train_loader):
-            vital = Variable(vital).cuda()
-            demo = Variable(demo).cuda()
-            gt = Variable(gt).cuda()
+        for idx, (vital, demo, gt) in enumerate(train_loader):
+            vital = Variable(vital.float()).cuda()
+            demo = Variable(demo.float()).cuda()
+            gt = Variable(gt.float()).cuda()
 
             pred = model(vital, demo)
             loss = bce_with_logits(pred, gt)
@@ -39,7 +40,7 @@ def train(model, train_loader, eval_loader, save_path, args):
             optim.step()
             optim.zero_grad()
 
-            total_loss += loss.data * v.size(0)
+            total_loss += loss.data
 
         total_loss /= len(train_loader.dataset)
         model.train(False)
@@ -62,18 +63,18 @@ def evaluate(model, dataloader, reload=False, save_path=None):
             checkpoint = torch.load(os.path.join(save_path, 'model.pth'))
             model.load_state_dict(checkpoint)
             print('[*] Saved model is loaded:\t', save_path+'/model.pth')
-        except 
+        except:
             raise 
 
     loss = 0
     num_data = 0
     preds = []
     for vital, demo, gt in iter(dataloader):
-        vital = Variable(vital, volatile=True).cuda() 
-        demo = Variable(demo, volatile=True).cuda() 
-        gt = Variable(gt, volatile=True).cuda()         
+        vital = Variable(vital.float(), volatile=True).cuda() 
+        demo = Variable(demo.float(), volatile=True).cuda() 
+        gt = Variable(gt.float(), volatile=True).cuda()         
         pred = model(vital, demo)
-        preds.extend(pred)
+        preds.extend(pred.data.cpu().numpy())
         loss += bce_with_logits(pred, gt)
         
         num_data += pred.size(0)
