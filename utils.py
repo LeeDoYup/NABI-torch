@@ -1,6 +1,7 @@
 import os
 from sklearn.metrics import roc_curve, roc_auc_score, average_precision_score
 from scipy.stats import pearsonr
+import numpy as np
 
 def create_dir(path):
     if not os.path.exists(path):
@@ -41,8 +42,9 @@ class Logger(object):
         
         
 def get_roc_score(y_gt, y_pred, thr):
+    from sklearn.metrics import roc_curve, roc_auc_score, average_precision_score
     #y_gt [0.2, 0.3, 0.5, 0.7, ...]
-    labels = y_gt[:]
+    labels = np.array(y_gt[:])
     labels[labels>=thr] = 1
     labels[labels<thr] = 0
     score = roc_auc_score(labels, y_pred)

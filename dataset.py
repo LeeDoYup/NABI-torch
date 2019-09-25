@@ -25,6 +25,8 @@ class FeatureDataset(Dataset):
         self.data = {}
         for key in self.keys:
             self.data[key] = np.load(os.path.join(dataset_path, name+'_'+key+'.npy'))
+            if key == 'gt':
+                self.data[key] = np.expand_dims(self.data[key], axis=-1)
     
     def tensorize(self):
         self.tensor = {}
@@ -33,9 +35,9 @@ class FeatureDataset(Dataset):
 
     def __getitem__(self, index):
         vital = self.tensor['vital'][index]
-        demo = self.tensor['demo'][index]
+        #demo = self.tensor['demo'][index]
         gt = self.tensor['gt'][index]
-        return vital, demo, gt
+        return vital, gt
 
     def __len__(self):
         return len(self.data['gt'])
