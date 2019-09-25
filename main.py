@@ -5,6 +5,8 @@ from torch.utils.data import DataLoader
 import numpy as np
 import utils
 import os
+import warnings
+warnings.filterwarnings("ignore")
 
 
 from dataset import FeatureDataset 
@@ -19,7 +21,7 @@ def parse_args():
     parser.add_argument('--epoch', type=int, default=30)
     parser.add_argument('--num_hid', type=int, default=1024)
     parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--batch_size', type=int, default=512)
+    parser.add_argument('--batch_size', type=int, default=64)
     
     #Model type
     parser.add_argument('--model', type=str, default='baseline')
@@ -85,7 +87,7 @@ if __name__ == '__main__':
     '''
     # Test Run
     '''
-    test_loss, test_preds = evaluate(model, loaders['test'], reload=True, save_path=save_path)
+    test_loss, test_preds, test_roc = evaluate(model, loaders['test'], reload=True, save_path=save_path)
     
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
