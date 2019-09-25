@@ -1,5 +1,7 @@
 from __future__ import print_function
+import torch
 import torch.nn as nn
+
 
 class SpatialNL(nn.Module):
     """Spatial NL block for image classification.
